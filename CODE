@@ -1,0 +1,92 @@
+class SymbolTable:
+    def _init_(self):
+        self.symbols = {}
+
+    def add_symbol(self, name, type):
+        self.symbols[name] = type
+
+    def get_type(self, name):
+        return self.symbols.get(name, None)
+
+
+class TypeChecker:
+    def _init_(self):
+        self.symbol_table = SymbolTable()
+
+    def visit_variable_declaration(self, node):
+        variable_name = node.name
+        variable_type = node.type
+
+        if self.symbol_table.get_type(variable_name) is not None:
+            print(f"Error: Variable '{variable_name}' already declared.")
+        else:
+            self.symbol_table.add_symbol(variable_name, variable_type)
+
+    def visit_assignment(self, node):
+        variable_name = node.variable
+        variable_type = self.symbol_table.get_type(variable_name)
+        expression_type = self.visit_expression(node.expression)
+
+        if variable_type is not None and expression_type is not None:
+            if variable_type != expression_type:
+                print(f"Error: Type mismatch in assignment for variable '{variable_name}'.")
+
+    def visit_expression(self, node):
+        if isinstance(node, int):
+            return "int"
+        elif isinstance(node, float):
+            return "float"
+        elif isinstance(node, str):
+            return "string"
+        elif isinstance(node, BinaryOperation):
+            left_type = self.visit_expression(node.left)
+            right_type = self.visit_expression(node.right)
+
+            if left_type is not None and right_type is not None:
+                # Simplified type coercion rules for demonstration purposes
+                if left_type == "float" or right_type == "float":
+                    return "float"
+                elif left_type == "int" and right_type == "int":
+                    return "int"
+                else:
+                    print("Error: Unsupported operation with types {left_type} and {right_type}.")
+
+    def check_semantics(self, abstract_syntax_tree):
+        for node in abstract_syntax_tree:
+            if isinstance(node, VariableDeclaration):
+                self.visit_variable_declaration(node)
+            elif isinstance(node, Assignment):
+                self.visit_assignment(node)
+
+
+# Example usage:
+class VariableDeclaration:
+    def _init_(self, name, type):
+        self.name = name
+        self.type = type
+
+
+class Assignment:
+    def _init_(self, variable, expression):
+        self.variable = variable
+        self.expression = expression
+
+
+class BinaryOperation:
+    def _init_(self, left, operator, right):
+        self.left = left
+        self.operator = operator
+        self.right = right
+
+
+if _name_ == "_main_":
+    # Example AST (Abstract Syntax Tree)
+    ast = [
+        VariableDeclaration("x", "int"),
+        VariableDeclaration("y", "float"),
+        Assignment("x", 10),
+        Assignment("y", BinaryOperation(5.0, "+", "x")),
+    ]
+
+    type_checker = TypeChecker()
+    type_checker.check_semantics(ast)
